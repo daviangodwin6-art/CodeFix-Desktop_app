@@ -49,3 +49,4 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           files: installer/CodeFix-Setup.exe
+          prerelease: ${{ contains(github.ref_name, '-') }}  # v0.1.0-rc1 must not become "Latest"
