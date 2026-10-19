@@ -10,3 +10,8 @@ frontend/node_modules/
 .claude/*
 !.claude/skills/
 CLAUDE.md
+
+# desktop build output (PyInstaller, Inno Setup)
+build/
+/dist/
+installer/

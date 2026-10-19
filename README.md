@@ -69,7 +69,7 @@ Edit `.env` (it is gitignored; never commit it):
 | `MAX_ATTEMPTS` | edit retry cap (default 5) |
 | `TEST_TIMEOUT` | seconds before a test run is killed (default 300) |
 | `MAX_CACHED_VENVS` | how many project environments are kept (default 10); beyond that the least recently used idle one is deleted and rebuilt on its next run |
-| `CODEFIX_HOME` | where `projects/` and `data/` are kept (default: this folder) |
+| `CODEFIX_HOME` | where `projects/` and `data/` are kept (default: this folder; desktop app: `%APPDATA%\CodeFix`) |
 
 ## Run
 
@@ -104,6 +104,36 @@ Our own tests (offline, fake LLM, about 4 minutes; only the tests marked `real_e
 ```
 .venv\Scripts\python -m pytest tests -q
 ```
+
+## Desktop app (Windows)
+
+The same server and page in a native window (pywebview over the local server), packaged with PyInstaller and
+an Inno Setup installer. Git must be on PATH (the app shows a message and stops if it is not), and Python 3 must
+be installed for the projects' test environments (the py launcher or `python` on PATH).
+
+Run from source (uses this folder for data and `.env`, exactly like `server.py`):
+
+```
+.venv\Scripts\python desktop.py
+```
+
+Build locally (Node only if you changed the page; Inno Setup 6 for the installer):
+
+```
+.venv\Scripts\python -m pip install -r requirements.txt -r requirements-build.txt
+.venv\Scripts\pyinstaller --noconfirm codefix.spec      -> dist\CodeFix\CodeFix.exe
+iscc installer.iss                                      -> installer\CodeFix-Setup.exe
+```
+
+Releases: pushing a tag `v*` runs `.github/workflows/release.yml`, which builds both on Windows and attaches
+`CodeFix-Setup.exe` to the GitHub Release. The installer is per-user (no admin), installs to
+`%LOCALAPPDATA%\Programs\CodeFix`, adds a Start-menu entry and optionally a desktop shortcut. It is not code
+signed, so SmartScreen warns on first run; there is no auto-update.
+
+Where the installed app keeps things: everything it writes is in `%APPDATA%\CodeFix` (`projects\`, `data\`,
+`codefix.log`), and that folder survives uninstalling. **The API key is not bundled**: create
+`%APPDATA%\CodeFix\.env` yourself (copy `.env.example`, fill in `GEMINI_API_KEY`) and restart the app. The app
+uses port 8000; a second copy refuses to start while the first is running.
 
 ## Sign in with GitHub (Firebase; needed for GitHub repos on the page)
 
