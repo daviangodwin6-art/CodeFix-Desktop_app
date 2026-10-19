@@ -19,7 +19,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import edits
+from . import edits, paths
 from . import repo as repo_mod
 from .repo import git
 
@@ -49,7 +49,7 @@ class UserError(Exception):
 
 
 def home():
-    return Path(os.getenv("CODEFIX_HOME") or Path(__file__).parent.parent)
+    return paths.home()
 
 
 def project_dir(project_id):

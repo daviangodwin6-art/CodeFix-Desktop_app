@@ -3,9 +3,10 @@ import os
 import shutil
 import sys
 import xml.etree.ElementTree as ET
+from functools import cache
 from pathlib import Path
 
-from . import sandbox
+from . import paths, sandbox
 
 
 class EnvError(Exception):
@@ -24,13 +25,31 @@ def venv_python(venv):
     return Path(venv) / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
 
 
+@cache
+def base_python():
+    """The Python that project venvs are made from. From source: this interpreter. In the desktop build
+    sys.executable is CodeFix.exe itself, so use an installed Python 3 (py launcher first, then PATH)."""
+    if not paths.FROZEN:
+        return sys.executable
+    for cmd in (["py", "-3"], ["python"], ["python3"]):
+        if not shutil.which(cmd[0]):
+            continue
+        try:  # asking it for sys.executable also skips the Microsoft Store "python" stub, which exits non-zero
+            code, out = _run(cmd + ["-c", "import sys; print(sys.executable)"], None, 30)
+        except EnvError:
+            continue
+        if code == 0 and out.strip():
+            return out.strip().splitlines()[-1]
+    raise EnvError("No Python 3 found. Install it from python.org (tick \"Add python.exe to PATH\"), then run again.")
+
+
 def install_plan(venv, tool):
     """(command that creates the venv, prefix of every install command) for tool "uv" or "pip"."""
     python = str(venv_python(venv))
     if tool == "uv":
-        return (["uv", "venv", "-q", "--python", sys.executable, str(venv)],
+        return (["uv", "venv", "-q", "--python", base_python(), str(venv)],
                 ["uv", "pip", "install", "-q", "--python", python])
-    return ([sys.executable, "-m", "venv", str(venv)],
+    return ([base_python(), "-m", "venv", str(venv)],
             [python, "-m", "pip", "install", "-q", "--disable-pip-version-check"])
 
 

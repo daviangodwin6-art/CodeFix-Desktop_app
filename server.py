@@ -9,7 +9,7 @@ from fastapi import Body, FastAPI, Header, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from agent import envmgr, pipeline, projects
+from agent import envmgr, paths, pipeline, projects
 from agent import repo as repo_mod
 from agent.repo import is_url
 
@@ -273,7 +273,8 @@ class NoCacheFiles(StaticFiles):
 
 
 # The React page is built by `npm run build` in frontend/ (see README); dist/ is committed so Node is optional.
-app.mount("/", NoCacheFiles(directory=Path(__file__).parent / "frontend" / "dist", html=True))
+# The desktop build ships it inside the bundle, hence paths.bundle_dir() rather than this file's folder.
+app.mount("/", NoCacheFiles(directory=paths.bundle_dir() / "frontend" / "dist", html=True))
 
 if __name__ == "__main__":
     import uvicorn

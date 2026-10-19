@@ -4,6 +4,8 @@ import os
 import time
 from pathlib import Path
 
+from . import paths
+
 FAKE_FILE = Path(__file__).parent.parent / "tests" / "fake_llm_tinyauth.json"
 
 
@@ -28,8 +30,8 @@ def complete(prompt):
 
     key = os.getenv("GEMINI_API_KEY")
     if not key:
-        raise LLMError("GEMINI_API_KEY is not set. Copy .env.example to .env and add your key "
-                       "(or set LLM_PROVIDER=fake for the offline demo).")
+        raise LLMError(f"GEMINI_API_KEY is not set. Put your key in {paths.env_file()} (see .env.example), "
+                       "then restart (or set LLM_PROVIDER=fake for the offline demo).")
     from google import genai
     from google.genai import types
 

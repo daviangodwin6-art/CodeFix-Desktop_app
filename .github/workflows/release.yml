@@ -1,0 +1,52 @@
+# On a version tag (git tag v1.2.3 && git push origin v1.2.3): build the Windows desktop app and attach
+# CodeFix-Setup.exe to the GitHub Release for that tag. No code signing, so Windows SmartScreen will warn.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build the page
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python packages
+        run: pip install -r requirements.txt -r requirements-build.txt
+
+      - name: Build the app (PyInstaller)
+        run: |
+          pyinstaller --noconfirm codefix.spec
+          if (-not (Test-Path dist\CodeFix\_internal\frontend\dist\index.html)) { throw "frontend/dist missing from the bundle" }
+
+      - name: Build the installer (Inno Setup)
+        run: |
+          choco install innosetup -y --no-progress
+          $iscc = (Get-ChildItem "C:\Program Files*\Inno Setup*\ISCC.exe" | Select-Object -First 1).FullName
+          & $iscc /DAppVersion=$("${{ github.ref_name }}".TrimStart("v")) installer.iss
+          if ($LASTEXITCODE -ne 0) { throw "ISCC failed" }
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: installer/CodeFix-Setup.exe
+          prerelease: ${{ contains(github.ref_name, '-') }}  # v0.1.0-rc1 must not become "Latest"

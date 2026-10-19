@@ -39,9 +39,13 @@ def untrusted_env(extra_env=None):
     return {**{k: v for k, v in env.items() if not _denied(k)}, **FIXED}
 
 
+# Windows: the desktop build has no console, so without this every git/pip/pytest call flashes a console window.
+NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+
+
 def _run(cmd, cwd, timeout, env):
     return subprocess.run(cmd, cwd=cwd, capture_output=True, encoding="utf-8", errors="replace",
-                          timeout=timeout, env=env)
+                          timeout=timeout, env=env, creationflags=NO_WINDOW)
 
 
 def run_untrusted(args, cwd, timeout, extra_env=None):
